@@ -1,0 +1,30 @@
+name: Docs build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  builddocs:
+    runs-on: ubuntu-latest
+    name: Docs build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@1a18b2267f80291a81ca1d33e7c851fe09e7dfc4 # v2.22.0
+        with:
+          php-version: 8.1
+          # extensions: curl, dom, gd, intl, json, ldap, mbstring, mysql, tidy, xdebug, zip
+          tools: composer:v2
+
+      - name: Composer install
+        shell: bash
+        run: composer install
+
+      - name: Run php script
+        shell: bash
+        run: php run.php
