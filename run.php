@@ -4,9 +4,9 @@ require 'vendor/autoload.php';
 use Michelf\Markdown;
 
 function makeHtmlPage($basename, $contentHtml, $sideNavHtml, $styles) {
-    $base = strpos(__DIR__, '/home/') === 0
-        ? 'file://' . __DIR__ . '/_site/'
-        : 'https://emteknetnz.github.io/docs-test-w1/';
+    $base = strpos(__DIR__, '/home/runner/') !== false
+        ? 'https://emteknetnz.github.io/docs-test-w1/'
+        : 'file://' . __DIR__ . '/_site/';
     $title = getH1fromHtml($contentHtml) ?: $basename;
     return <<<EOT
         <!DOCTYPE html>
