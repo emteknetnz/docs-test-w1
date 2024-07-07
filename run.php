@@ -10,16 +10,22 @@ if (empty($whichZip)) {
     exit(1);
 }
 
-// Ensure zips folder exists
+// Ensure zips folder exists for downloaded zip files from other repos with docs
 $zipsDir = __DIR__ . '/zips';
 if (!file_exists($zipsDir)) {
     mkdir($zipsDir, 0777, true);
 }
 
-// Ensure repos folder exists
+// Ensure repos folder exists for extracted zip files
 $reposDir = __DIR__ . '/repos';
 if (!file_exists($reposDir)) {
     mkdir($reposDir, 0777, true);
+}
+
+// Ensure _site folder exists for building the static site
+$siteDir = __DIR__ . '/_site';
+if (!file_exists($siteDir)) {
+    mkdir($siteDir, 0777, true);
 }
 
 $ghrepo = 'emteknetnz/docs-test-r1';
@@ -59,4 +65,6 @@ if (!file_exists($docsFilePath)) {
 # https://michelf.ca/projects/php-markdown/configuration/
 $myText = file_get_contents($docsFilePath);
 $myHtml = Markdown::defaultTransform($myText);
-echo $myHtml;
+$filePath = "$siteDir/index.html";
+file_put_contents($filePath, $myHtml);
+echo "File written to $filePath\n";
