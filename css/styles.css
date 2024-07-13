@@ -82,6 +82,25 @@ body {
     margin-left: 100px;
 }
 
+.snippet {
+    background-color: lightyellow;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.snippet code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+}
+
+.snippet--php {
+    background-color: rgb(223, 233, 247);
+}
+
+.snippet--plaintext {
+    background-color: rgb(255, 255, 255);
+}
+
 .logo {
     display: inline-block;
     background-color: cyan;

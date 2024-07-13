@@ -1,16 +1,12 @@
 <?php
 
-use Michelf\Markdown;
-
 // Loop github repos
-$ghrepos = [
-    'emteknetnz/docs-test-r1',
-];
-foreach ($ghrepos as $ghrepo) {
+foreach ($repoData as $data) {
 
+    $ghrepo = $data['ghrepo'];
+    $branch = $data['branch'];
+    $docsDir = $data['docsDir'];
     $repo = explode('/', $ghrepo)[1];
-    $branch = 'main';
-    $docsDir = 'docs'; // this should be centrally configured (i.e. in w1, not r1)
 
     $brace = '{,*/,*/*/,*/*/*/,*/*/*/*/,*/*/*/*/*/,*/*/*/*/*/*/}';
 
@@ -36,11 +32,10 @@ foreach ($ghrepos as $ghrepo) {
     }
 
     // Loop through md files in extracted zip using glob including subdirs
-    // $brace = makeBrace('*.md');
     $mdFilePaths = glob("$unzipPath/$docsDir/$brace*.md", GLOB_BRACE);
     foreach ($mdFilePaths as $mdFilePath) {
         $md = file_get_contents($mdFilePath);
-        $html = Markdown::defaultTransform($md);
+        $html = convertMarkdownToHtml($md);
         $relativePath = str_replace("$unzipPath/$docsDir/", '', $mdFilePath);
         $htmlFilePath = "$siteDir/$relativePath";
         $htmlFilePath = preg_replace('/\.md$/', '.html', $htmlFilePath);
