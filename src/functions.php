@@ -1,6 +1,6 @@
 <?php
 
-use Michelf\Markdown;
+use Michelf\MarkdownExtra;
 
 function makeHtmlPage($basename, $contentHtml, $sideNavHtml) {
     global $siteDir, $templatesDir;
@@ -27,30 +27,31 @@ function getH1fromHtml($html) {
 }
 
 function convertMarkdownToHtml($md) {
-    [$md, $codeSnippets] = extractCodeSnippets($md);
-    $html = Markdown::defaultTransform($md);
-    $html = addCodeSnippetsToHtml($html, $codeSnippets);
+    $parser = new MarkdownExtra();
+    $parser->code_attr_on_pre = true;
+    $parser->code_class_prefix = 'snippet snippet--';
+    $html = $parser->transform($md);
     return $html;
 }
 
-function extractCodeSnippets($md) {
-    $codeSnippets = [];
+function extractTipThings($md) {
+    $codeFences = [];
     $i = 0;
-    $md = preg_replace_callback('/```([A-Za-z]*)\n(.*?)```/s', function ($matches) use (&$codeSnippets, $i) {
+    $md = preg_replace_callback('/```([A-Za-z]*)\n(.*?)```/s', function ($matches) use (&$codeFences, $i) {
         $lang = $matches[1] ?: 'plaintext';
         $code = $matches[2];
-        $codeSnippets[$i] = ['lang' => $lang, 'code' => $code];
+        $codeFences[$i] = ['lang' => $lang, 'code' => $code];
         $i++;
-        return "CODE-SNIPPET-PLACEHOLDER-$i";
+        return "CODE-FENCE-$i";
     }, $md);
-    return [$md, $codeSnippets];
+    return [$md, $codeFences];
 }
 
-function addCodeSnippetsToHtml($html, $codeSnippets) {
-    return preg_replace_callback('/CODE-SNIPPET-PLACEHOLDER-(\d+)/', function ($matches) use ($codeSnippets) {
+function addextractTipThingsToHtml($html, $codeFences) {
+    return preg_replace_callback('/CODE-FENCE-(\d+)/', function ($matches) use ($codeFences) {
         $i = $matches[1] - 1;
-        $lang = $codeSnippets[$i]['lang'];
-        $code = $codeSnippets[$i]['code'];
+        $lang = $codeFences[$i]['lang'];
+        $code = $codeFences[$i]['code'];
         return '<pre class="snippet snippet--' . $lang . '"><code>' . htmlspecialchars($code) . '</code></pre>';
     }, $html);
 }

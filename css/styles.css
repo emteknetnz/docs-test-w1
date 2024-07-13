@@ -97,10 +97,6 @@ body {
     background-color: rgb(223, 233, 247);
 }
 
-.snippet--plaintext {
-    background-color: rgb(255, 255, 255);
-}
-
 .logo {
     display: inline-block;
     background-color: cyan;
