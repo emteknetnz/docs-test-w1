@@ -1,5 +1,7 @@
 <?php
 
+$htmlFilePathToMetadata = [];
+
 // Loop github repos
 foreach ($repoData as $data) {
 
@@ -35,6 +37,8 @@ foreach ($repoData as $data) {
     $mdFilePaths = glob("$unzipPath/$docsDir/$brace*.md", GLOB_BRACE);
     foreach ($mdFilePaths as $mdFilePath) {
         $md = file_get_contents($mdFilePath);
+        $metadata = getMetadataFromMd($md);
+        $md = removeMetadataFromMd($md);
         $html = convertMarkdownToHtml($md);
         $relativePath = str_replace("$unzipPath/$docsDir/", '', $mdFilePath);
         $htmlFilePath = "$siteDir/$relativePath";
@@ -44,6 +48,7 @@ foreach ($repoData as $data) {
             mkdir($htmlFileDir, 0777, true);
         }
         file_put_contents($htmlFilePath, $html);
+        $htmlFilePathToMetadata[$htmlFilePath] = $metadata;
         echo "File written to $htmlFilePath\n";
     }
 
@@ -80,24 +85,26 @@ foreach ($repoData as $data) {
     }
 
     // Make side nav html for the site
-    $htmlFiles = glob("$siteDir/$brace*.html", GLOB_BRACE);
+    $htmlFilePaths = glob("$siteDir/$brace*.html", GLOB_BRACE);
     $sideNavHtml = '<ul>';
-    foreach ($htmlFiles as $htmlFile) {
-        $level = substr_count(str_replace($siteDir, '', $htmlFile), '/');
-        $contentHtml = file_get_contents($htmlFile);
-        $title = getH1fromHtml($contentHtml) ?: basename($htmlFile);
-        $href = ltrim(str_replace($siteDir, '', $htmlFile), '/');
+    foreach ($htmlFilePaths as $htmlFilePath) {
+        $level = substr_count(str_replace($siteDir, '', $htmlFilePath), '/');
+        $metadata = $htmlFilePathToMetadata[$htmlFilePath] ?? [];
+        $contentHtml = file_get_contents($htmlFilePath);
+        $title = getTitle($metadata, $contentHtml, $htmlFilePath);
+        $href = ltrim(str_replace($siteDir, '', $htmlFilePath), '/');
         $sideNavHtml .= "<li class=\"sidenav__item--level-$level\"><a href=\"$href\">$title</a></li>";
     }
     $sideNavHtml .= '</ul>';
 
-    // Update all HTML content files surronding with site
-    foreach ($htmlFiles as $htmlFile) {
-        $basename = basename($htmlFile);
-        $contentHtml = file_get_contents($htmlFile);
-        $html = makeHtmlPage($basename, $contentHtml, $sideNavHtml);
-        file_put_contents($htmlFile, $html);
-        echo "HTML file updated $htmlFile\n";
+    // Update all HTML content files by adding in template
+    foreach ($htmlFilePaths as $htmlFilePath) {
+        $metadata = $htmlFilePathToMetadata[$htmlFilePath] ?? [];
+        $contentHtml = file_get_contents($htmlFilePath);
+        $title = getTitle($metadata, $contentHtml, $htmlFilePath);
+        $html = makeHtmlPage($title, $contentHtml, $sideNavHtml);
+        file_put_contents($htmlFilePath, $html);
+        echo "HTML file updated $htmlFilePath\n";
     }
 }
 
