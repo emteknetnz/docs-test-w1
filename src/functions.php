@@ -31,27 +31,17 @@ function convertMarkdownToHtml($md) {
     $parser->code_attr_on_pre = true;
     $parser->code_class_prefix = 'snippet snippet--';
     $html = $parser->transform($md);
+    $html = updateAlerts($html);
     return $html;
 }
 
-function extractTipThings($md) {
-    $codeFences = [];
-    $i = 0;
-    $md = preg_replace_callback('/```([A-Za-z]*)\n(.*?)```/s', function ($matches) use (&$codeFences, $i) {
-        $lang = $matches[1] ?: 'plaintext';
-        $code = $matches[2];
-        $codeFences[$i] = ['lang' => $lang, 'code' => $code];
-        $i++;
-        return "CODE-FENCE-$i";
-    }, $md);
-    return [$md, $codeFences];
-}
-
-function addextractTipThingsToHtml($html, $codeFences) {
-    return preg_replace_callback('/CODE-FENCE-(\d+)/', function ($matches) use ($codeFences) {
-        $i = $matches[1] - 1;
-        $lang = $codeFences[$i]['lang'];
-        $code = $codeFences[$i]['code'];
-        return '<pre class="snippet snippet--' . $lang . '"><code>' . htmlspecialchars($code) . '</code></pre>';
-    }, $html);
+function updateAlerts($html) {
+    $types = ['NOTE', 'TIP', 'WARNING', 'IMPORTANT', 'CAUTION'];
+    foreach ($types as $type) {
+        $ltype = strtolower($type);
+        $find = "<blockquote>\n  <p>[!$type]";
+        $replacement = "<blockquote class=\"alert alert--$ltype\">\n  <p>";
+        $html = str_replace($find, $replacement, $html);
+    }
+    return $html;
 }

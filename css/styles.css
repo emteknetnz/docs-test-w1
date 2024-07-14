@@ -8,6 +8,32 @@ body {
     margin: 0;
 }
 
+.alert {
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.alert--note {
+    background-color: lightyellow;
+}
+
+.alert--tip {
+    background-color: lightgreen;
+}
+
+.alert--important {
+    background-color: lightblue;
+}
+
+.alert--warning {
+    background-color: lightsalmon;
+}
+
+.alert--caution {
+    background-color: lightcoral;
+}
+
+
 .container {
     display: flex;
     flex-direction: row;
