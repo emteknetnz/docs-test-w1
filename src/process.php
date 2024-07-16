@@ -16,6 +16,7 @@ foreach ($repoData as $data) {
     $zipFilePath = "$zipsDir/$repo.zip";
     if (!file_exists($zipFilePath)) {
         $url = "https://github.com/$ghrepo/archive/refs/heads/$branch.zip";
+        echo "Downloading $url\n";
         $c = file_get_contents($url);
         file_put_contents($zipFilePath, $c);
     }
@@ -49,7 +50,6 @@ foreach ($repoData as $data) {
         }
         file_put_contents($htmlFilePath, $html);
         $htmlFilePathToMetadata[$htmlFilePath] = $metadata;
-        echo "File written to $htmlFilePath\n";
     }
 
     // Loop through built site folders, add in missing index.html files
@@ -78,35 +78,27 @@ foreach ($repoData as $data) {
             $href = preg_replace('/\.html$/', '', $href);
             $lines[] = "<li><a href=\"$href\">$title</a></li>";
         }
-        $lines[] = '</ul>';
+        $lines[] = "</ul>\n";
         $html = implode("\n", $lines);
         file_put_contents($indexHtmlFilePath, $html);
-        echo "Index file written to $indexHtmlFilePath\n";
     }
 
-    // Make side nav html for the site
-    $htmlFilePaths = glob("$siteDir/$brace*.html", GLOB_BRACE);
-    $sideNavHtml = '<ul>';
-    foreach ($htmlFilePaths as $htmlFilePath) {
-        $level = substr_count(str_replace($siteDir, '', $htmlFilePath), '/');
-        $metadata = $htmlFilePathToMetadata[$htmlFilePath] ?? [];
-        $contentHtml = file_get_contents($htmlFilePath);
-        $title = getTitle($metadata, $contentHtml, $htmlFilePath);
-        $href = ltrim(str_replace($siteDir, '', $htmlFilePath), '/');
-        $sideNavHtml .= "<li class=\"sidenav__item--level-$level\"><a href=\"$href\">$title</a></li>";
-    }
-    $sideNavHtml .= '</ul>';
+    // Create sidenav html
+    $sideNavHtml = createSideNavHtml();
 
     // Update all HTML content files by adding in template
+    $htmlFilePaths = glob("$siteDir/$brace*.html", GLOB_BRACE);
     foreach ($htmlFilePaths as $htmlFilePath) {
+        // $htmlFilePath = "$dir/$file";
         $metadata = $htmlFilePathToMetadata[$htmlFilePath] ?? [];
         $contentHtml = file_get_contents($htmlFilePath);
         $title = getTitle($metadata, $contentHtml, $htmlFilePath);
         $html = makeHtmlPage($title, $contentHtml, $sideNavHtml);
         file_put_contents($htmlFilePath, $html);
-        echo "HTML file updated $htmlFilePath\n";
     }
 }
 
 // Copy styles.css to _site
 copy("$cssDir/styles.css", "$siteDir/styles.css");
+
+echo "Local site available at file://$siteDir/index.html\n";

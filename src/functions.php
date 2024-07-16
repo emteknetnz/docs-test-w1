@@ -81,3 +81,64 @@ function updateAlerts($html) {
     }
     return $html;
 }
+
+function getSiteStructure($dir, &$structure = []) {
+    if (empty($structure)) {
+        $structure = [
+            'dir' => $dir,
+            'subdirs' => [],
+            'files' => [],
+        ];
+    }
+    $files = scandir($dir);
+    foreach ($files as $file) {
+        if (in_array($file, ['.', '..'])) {
+            continue;
+        }
+        if (is_dir("$dir/$file")) {
+            $structure['subdirs'][] = getSiteStructure("$dir/$file");
+        } else {
+            $structure['files'][] = $file;
+        }
+    }
+    // index.html files come first
+    usort($structure['files'], function($a, $b) {
+        if ($a === 'index.html') {
+            return -1;
+        } elseif ($b === 'index.html') {
+            return 1;
+        }
+        return $a <=> $b;
+    });
+    return $structure;
+}
+
+function processHtmlFilePath($htmlFilePath, &$sideNavHtml) {
+    global $siteDir;
+    $metadata = $htmlFilePathToMetadata[$htmlFilePath] ?? [];
+    $contentHtml = file_get_contents($htmlFilePath);
+    $title = getTitle($metadata, $contentHtml, $htmlFilePath);
+    $href = ltrim(str_replace($siteDir, '', $htmlFilePath), '/');
+    $sideNavHtml .= "<li class=\"sidenav__item\"><a href=\"$href\">$title</a></li>\n";
+};
+
+function processDir($dir, $structure, &$sideNavHtml) {
+    $sideNavHtml .= '<ul>';
+    foreach ($structure['files'] as $file) {
+        $htmlFilePath = "$dir/$file";
+        processHtmlFilePath($htmlFilePath, $sideNavHtml);
+        foreach ($structure['subdirs'] as $subdir) {
+            $sdir = str_replace("$dir/", '', $subdir['dir']);
+            processDir("$dir/$sdir", $subdir, $sideNavHtml);
+        }
+    }
+    $sideNavHtml .= '</ul>';
+};
+
+function createSideNavHtml() {
+    global $siteDir;
+    $sideNavHtml = '';
+    $structure = getSiteStructure($siteDir);
+    processDir($structure['dir'], $structure, $sideNavHtml);
+    return $sideNavHtml;
+}
