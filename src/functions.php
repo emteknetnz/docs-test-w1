@@ -121,6 +121,10 @@ function addHtmlFilePathToSideNavHtml(
     &$sideNavHtml
 ) {
     global $siteDir;
+    if ($level === 0) {
+        // link is shown in top left logo instead
+        return;
+    }
     $metadata = $htmlFilePathToMetadata[$htmlFilePath] ?? [];
     $contentHtml = file_get_contents($htmlFilePath);
     $title = getTitle($metadata, $contentHtml, $htmlFilePath);
@@ -128,7 +132,6 @@ function addHtmlFilePathToSideNavHtml(
     $isCurrent = $htmlFilePath === $currentFilePath;
     $class = implode(' ', [
         'sidenav__item',
-        "sidenav__item--level-$level",
         $isCurrent ? 'sidenav__item--current' : '',
         $hasDecendentCurrentFilePath && !$isCurrent ? 'sidenav__item--current-is-decendant' : '',
     ]);
@@ -163,7 +166,11 @@ function hasDecendentCurrentFilePath($subStructure, $currentFilePath) {
 }
 
 function processDirForSideNavHtml($dir, $subStructure, $level, $currentFilePath, &$sideNavHtml) {
-    $sideNavHtml .= "<ul>\n";
+    if ($level === 0) {
+        $sideNavHtml .= "<ul class=\"sidenav__items sidenav__items--first\">\n";
+    } else {
+        $sideNavHtml .= "<li><ul class=\"sidenav__items\">\n";
+    }
     $files = $subStructure['files'];
     for ($i = 0; $i < count($files); $i++) {
         $file = $files[$i];
@@ -183,9 +190,9 @@ function processDirForSideNavHtml($dir, $subStructure, $level, $currentFilePath,
         if (count($files) > 1) {
             // index.html is always the first file
             if ($i == 0) {
-                $sideNavHtml .= "<ul>\n";
+                $sideNavHtml .= "<li><ul class=\"sidenav__items\">\n";
             } elseif ($i == count($files) - 1) {
-                $sideNavHtml .= "</ul>\n";
+                $sideNavHtml .= "</ul></li>\n";
             }
         }
     }
@@ -193,7 +200,11 @@ function processDirForSideNavHtml($dir, $subStructure, $level, $currentFilePath,
         $sdir = str_replace("$dir/", '', $subdir['dir']);
         processDirForSideNavHtml("$dir/$sdir", $subdir, $level + 1, $currentFilePath, $sideNavHtml);
     }
-    $sideNavHtml .= "</ul>\n";
+    if ($level === 0) {
+        $sideNavHtml .= "</ul>\n";
+    } else {
+        $sideNavHtml .= "</ul></li>\n";
+    }
 };
 
 function createSideNavHtml($currentFilePath) {
