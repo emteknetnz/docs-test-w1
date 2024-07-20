@@ -113,7 +113,13 @@ function getSiteStructure($dir, &$structure = []) {
     return $structure;
 }
 
-function processHtmlFilePathForSideNavHtml($htmlFilePath, $level, $currentFilePath, &$sideNavHtml) {
+function addHtmlFilePathToSideNavHtml(
+    $htmlFilePath,
+    $level,
+    $currentFilePath,
+    $hasDecendentCurrentFilePath,
+    &$sideNavHtml
+) {
     global $siteDir;
     $metadata = $htmlFilePathToMetadata[$htmlFilePath] ?? [];
     $contentHtml = file_get_contents($htmlFilePath);
@@ -124,9 +130,37 @@ function processHtmlFilePathForSideNavHtml($htmlFilePath, $level, $currentFilePa
         'sidenav__item',
         "sidenav__item--level-$level",
         $isCurrent ? 'sidenav__item--current' : '',
+        $hasDecendentCurrentFilePath && !$isCurrent ? 'sidenav__item--current-is-decendant' : '',
     ]);
     $sideNavHtml .= "<li class=\"$class\"><a href=\"$href\">$title</a></li>\n";
 };
+
+function hasSiblingCurrentFilePath($subStructure, $currentFilePath) {
+    for ($i = 1; $i < count($subStructure['files']); $i++) {
+        $file = $subStructure['files'][$i];
+        $filePath = $subStructure['dir'] . "/$file";
+        if ($filePath === $currentFilePath) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function hasDecendentCurrentFilePath($subStructure, $currentFilePath) {
+    for ($i = 0; $i < count($subStructure['files']); $i++) {
+        $file = $subStructure['files'][$i];
+        $filePath = $subStructure['dir'] . "/$file";
+        if ($filePath === $currentFilePath) {
+            return true;
+        }
+    }
+    foreach ($subStructure['subdirs'] as $subdir) {
+        if (hasDecendentCurrentFilePath($subdir, $currentFilePath)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 function processDirForSideNavHtml($dir, $subStructure, $level, $currentFilePath, &$sideNavHtml) {
     $sideNavHtml .= "<ul>\n";
@@ -135,7 +169,17 @@ function processDirForSideNavHtml($dir, $subStructure, $level, $currentFilePath,
         $file = $files[$i];
         $htmlFilePath = "$dir/$file";
         $fileLevel = $i == 0 ? $level : $level + 1;
-        processHtmlFilePathForSideNavHtml($htmlFilePath, $fileLevel, $currentFilePath, $sideNavHtml);
+        $hasDecendentCurrentFilePath = false;
+        if ($i === 0) {
+            $hasDecendentCurrentFilePath = hasDecendentCurrentFilePath($subStructure, $currentFilePath);
+        }
+        addHtmlFilePathToSideNavHtml(
+            $htmlFilePath,
+            $fileLevel,
+            $currentFilePath,
+            $hasDecendentCurrentFilePath,
+            $sideNavHtml
+        );
         if (count($files) > 1) {
             // index.html is always the first file
             if ($i == 0) {

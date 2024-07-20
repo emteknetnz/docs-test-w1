@@ -90,6 +90,10 @@ body {
 }
 
 .sidenav__item--current {
+    background-color: plum;
+}
+
+.sidenav__item--current-is-decendant {
     background-color: pink;
 }
 
