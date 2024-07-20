@@ -73,9 +73,10 @@ body {
 }
 
 .sidenav {
-    width: 250px;
+    width: 275px;
     padding: 20px;
-    height: 100vh;
+    height: 100%;
+    min-height: 100vh;
     background-color: paleturquoise;
 }
 
@@ -84,28 +85,36 @@ body {
     padding: 0;
 }
 
+.sidenav__item {
+    margin: 0 0 2px 0;
+}
+
+.sidenav__item--current {
+    background-color: pink;
+}
+
 .sidenav__item--level-1 {
     margin-left: 0;
 }
 
 .sidenav__item--level-2 {
-    margin-left: 20px;
+    margin-left: 10px;
 }
 
 .sidenav__item--level-3 {
-    margin-left: 40px;
+    margin-left: 20px;
 }
 
 .sidenav__item--level-4 {
-    margin-left: 60px;
+    margin-left: 30px;
 }
 
 .sidenav__item--level-5 {
-    margin-left: 80px;
+    margin-left: 40px;
 }
 
 .sidenav__item--level-6 {
-    margin-left: 100px;
+    margin-left: 50px;
 }
 
 .snippet {

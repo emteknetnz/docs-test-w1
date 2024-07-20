@@ -83,16 +83,14 @@ foreach ($repoData as $data) {
         file_put_contents($indexHtmlFilePath, $html);
     }
 
-    // Create sidenav html
-    $sideNavHtml = createSideNavHtml();
 
     // Update all HTML content files by adding in template
     $htmlFilePaths = glob("$siteDir/$brace*.html", GLOB_BRACE);
     foreach ($htmlFilePaths as $htmlFilePath) {
-        // $htmlFilePath = "$dir/$file";
         $metadata = $htmlFilePathToMetadata[$htmlFilePath] ?? [];
         $contentHtml = file_get_contents($htmlFilePath);
         $title = getTitle($metadata, $contentHtml, $htmlFilePath);
+        $sideNavHtml = createSideNavHtml($htmlFilePath);
         $html = makeHtmlPage($title, $contentHtml, $sideNavHtml);
         file_put_contents($htmlFilePath, $html);
     }

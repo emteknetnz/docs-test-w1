@@ -113,32 +113,54 @@ function getSiteStructure($dir, &$structure = []) {
     return $structure;
 }
 
-function processHtmlFilePath($htmlFilePath, &$sideNavHtml) {
+function processHtmlFilePathForSideNavHtml($htmlFilePath, $level, $currentFilePath, &$sideNavHtml) {
     global $siteDir;
     $metadata = $htmlFilePathToMetadata[$htmlFilePath] ?? [];
     $contentHtml = file_get_contents($htmlFilePath);
     $title = getTitle($metadata, $contentHtml, $htmlFilePath);
     $href = ltrim(str_replace($siteDir, '', $htmlFilePath), '/');
-    $sideNavHtml .= "<li class=\"sidenav__item\"><a href=\"$href\">$title</a></li>\n";
+    $isCurrent = $htmlFilePath === $currentFilePath;
+    $class = implode(' ', [
+        'sidenav__item',
+        "sidenav__item--level-$level",
+        $isCurrent ? 'sidenav__item--current' : '',
+    ]);
+    $sideNavHtml .= "<li class=\"$class\"><a href=\"$href\">$title</a></li>\n";
 };
 
-function processDir($dir, $structure, &$sideNavHtml) {
-    $sideNavHtml .= '<ul>';
-    foreach ($structure['files'] as $file) {
+function processDirForSideNavHtml($dir, $subStructure, $level, $currentFilePath, &$sideNavHtml) {
+    $sideNavHtml .= "<ul>\n";
+    $files = $subStructure['files'];
+    for ($i = 0; $i < count($files); $i++) {
+        $file = $files[$i];
         $htmlFilePath = "$dir/$file";
-        processHtmlFilePath($htmlFilePath, $sideNavHtml);
-        foreach ($structure['subdirs'] as $subdir) {
-            $sdir = str_replace("$dir/", '', $subdir['dir']);
-            processDir("$dir/$sdir", $subdir, $sideNavHtml);
+        $fileLevel = $i == 0 ? $level : $level + 1;
+        processHtmlFilePathForSideNavHtml($htmlFilePath, $fileLevel, $currentFilePath, $sideNavHtml);
+        if (count($files) > 1) {
+            // index.html is always the first file
+            if ($i == 0) {
+                $sideNavHtml .= "<ul>\n";
+            } elseif ($i == count($files) - 1) {
+                $sideNavHtml .= "</ul>\n";
+            }
         }
     }
-    $sideNavHtml .= '</ul>';
+    foreach ($subStructure['subdirs'] as $subdir) {
+        $sdir = str_replace("$dir/", '', $subdir['dir']);
+        processDirForSideNavHtml("$dir/$sdir", $subdir, $level + 1, $currentFilePath, $sideNavHtml);
+    }
+    $sideNavHtml .= "</ul>\n";
 };
 
-function createSideNavHtml() {
+function createSideNavHtml($currentFilePath) {
     global $siteDir;
     $sideNavHtml = '';
     $structure = getSiteStructure($siteDir);
-    processDir($structure['dir'], $structure, $sideNavHtml);
+    debug($structure);
+    processDirForSideNavHtml($structure['dir'], $structure, 0, $currentFilePath, $sideNavHtml);
     return $sideNavHtml;
+}
+
+function debug($var) {
+    file_put_contents(__DIR__ . '/../debug.txt', var_export($var, true));
 }

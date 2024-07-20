@@ -1,6 +1,8 @@
 _site
 composer.lock
+debug.txt
 repos
 vendor
 zips
+
 
