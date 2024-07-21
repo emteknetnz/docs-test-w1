@@ -105,6 +105,10 @@ body {
     background-color: pink;
 }
 
+.sidenav__item--current-is-sibline {
+    background-color: papayawhip;
+}
+
 .snippet {
     background-color: lightyellow;
     padding: 20px;

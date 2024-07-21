@@ -118,6 +118,7 @@ function addHtmlFilePathToSideNavHtml(
     $level,
     $currentFilePath,
     $hasDecendentCurrentFilePath,
+    $hasSiblingCurrentFilePath,
     &$sideNavHtml
 ) {
     global $siteDir;
@@ -134,6 +135,7 @@ function addHtmlFilePathToSideNavHtml(
         'sidenav__item',
         $isCurrent ? 'sidenav__item--current' : '',
         $hasDecendentCurrentFilePath && !$isCurrent ? 'sidenav__item--current-is-decendant' : '',
+        $hasSiblingCurrentFilePath && !$isCurrent ? 'sidenav__item--current-is-sibling' : '',
     ]);
     $sideNavHtml .= "<li class=\"$class\"><a href=\"$href\">$title</a></li>\n";
 };
@@ -180,11 +182,13 @@ function processDirForSideNavHtml($dir, $subStructure, $level, $currentFilePath,
         if ($i === 0) {
             $hasDecendentCurrentFilePath = hasDecendentCurrentFilePath($subStructure, $currentFilePath);
         }
+        $hasSiblingCurrentFilePath = hasSiblingCurrentFilePath($subStructure, $currentFilePath);
         addHtmlFilePathToSideNavHtml(
             $htmlFilePath,
             $fileLevel,
             $currentFilePath,
             $hasDecendentCurrentFilePath,
+            $hasSiblingCurrentFilePath,
             $sideNavHtml
         );
         if (count($files) > 1) {
