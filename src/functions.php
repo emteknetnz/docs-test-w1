@@ -119,9 +119,10 @@ function addHtmlFilePathToSideNavHtml(
     $currentFilePath,
     $hasDecendentCurrentFilePath,
     $hasSiblingCurrentFilePath,
+    $isChildOfCurrentFilePath,
     &$sideNavHtml
 ) {
-    global $siteDir;
+    global $siteDir, $htmlFilePathToMetadata;
     if ($level === 0) {
         // link is shown in top left logo instead
         return;
@@ -130,12 +131,18 @@ function addHtmlFilePathToSideNavHtml(
     $contentHtml = file_get_contents($htmlFilePath);
     $title = getTitle($metadata, $contentHtml, $htmlFilePath);
     $href = ltrim(str_replace($siteDir, '', $htmlFilePath), '/');
+    $isLevelOne = $level === 1;
     $isCurrent = $htmlFilePath === $currentFilePath;
+    $hasDecendent = $hasDecendentCurrentFilePath && !$isCurrent;
+    $hasSibling = $hasSiblingCurrentFilePath && !$isCurrent && !$hasDecendent;
+    $isChild = $isChildOfCurrentFilePath && !$isCurrent && !$hasDecendent && !$hasSibling;
     $class = implode(' ', [
         'sidenav__item',
+        $isLevelOne ? 'sidenav__item--level-one' : '',
         $isCurrent ? 'sidenav__item--current' : '',
-        $hasDecendentCurrentFilePath && !$isCurrent ? 'sidenav__item--current-is-decendant' : '',
-        $hasSiblingCurrentFilePath && !$isCurrent ? 'sidenav__item--current-is-sibling' : '',
+        $hasDecendent ? 'sidenav__item--current-is-decendant' : '',
+        $hasSibling ? 'sidenav__item--current-is-sibling' : '',
+        $isChild ? 'sidenav__item--is-child-of-current' : '',
     ]);
     $sideNavHtml .= "<li class=\"$class\"><a href=\"$href\">$title</a></li>\n";
 };
@@ -167,12 +174,31 @@ function hasDecendentCurrentFilePath($subStructure, $currentFilePath) {
     return false;
 }
 
-function processDirForSideNavHtml($dir, $subStructure, $level, $currentFilePath, &$sideNavHtml) {
+function isChildOfCurrentFilePath($parentSubStructre, $htmlFilePath, $currentFilePath) {
+    // check that currentfilepath is in the parent structure
+    // $currentFilePathInParentSubStructure = false;
+    for ($i = 0; $i < count($parentSubStructre['files']); $i++) {
+        $file = $parentSubStructre['files'][$i];
+        $filePath = $parentSubStructre['dir'] . "/$file";
+        if ($filePath === $currentFilePath) {
+            // $currentFilePathInParentSubStructure = true;
+            // break;
+            return true;
+        }
+    }
+    // if (!$currentFilePathInParentSubStructure) {
+    //     return false;
+    // }
+    return false;
+}
+
+function processDirForSideNavHtml($dir, $parentSubStructre, $subStructure, $level, $currentFilePath, &$sideNavHtml) {
     if ($level === 0) {
         $sideNavHtml .= "<ul class=\"sidenav__items sidenav__items--first\">\n";
     } else {
         $sideNavHtml .= "<li><ul class=\"sidenav__items\">\n";
     }
+    // loop through files
     $files = $subStructure['files'];
     for ($i = 0; $i < count($files); $i++) {
         $file = $files[$i];
@@ -182,13 +208,16 @@ function processDirForSideNavHtml($dir, $subStructure, $level, $currentFilePath,
         if ($i === 0) {
             $hasDecendentCurrentFilePath = hasDecendentCurrentFilePath($subStructure, $currentFilePath);
         }
+        // todo change to isSiblingOfCurrentFilePath($file, ...)
         $hasSiblingCurrentFilePath = hasSiblingCurrentFilePath($subStructure, $currentFilePath);
+        $isChildOfCurrentFilePath = isChildOfCurrentFilePath($parentSubStructre, $htmlFilePath, $currentFilePath);
         addHtmlFilePathToSideNavHtml(
             $htmlFilePath,
             $fileLevel,
             $currentFilePath,
             $hasDecendentCurrentFilePath,
             $hasSiblingCurrentFilePath,
+            $isChildOfCurrentFilePath,
             $sideNavHtml
         );
         if (count($files) > 1) {
@@ -202,7 +231,7 @@ function processDirForSideNavHtml($dir, $subStructure, $level, $currentFilePath,
     }
     foreach ($subStructure['subdirs'] as $subdir) {
         $sdir = str_replace("$dir/", '', $subdir['dir']);
-        processDirForSideNavHtml("$dir/$sdir", $subdir, $level + 1, $currentFilePath, $sideNavHtml);
+        processDirForSideNavHtml("$dir/$sdir", $subStructure, $subdir, $level + 1, $currentFilePath, $sideNavHtml);
     }
     if ($level === 0) {
         $sideNavHtml .= "</ul>\n";
@@ -216,7 +245,7 @@ function createSideNavHtml($currentFilePath) {
     $sideNavHtml = '';
     $structure = getSiteStructure($siteDir);
     debug($structure);
-    processDirForSideNavHtml($structure['dir'], $structure, 0, $currentFilePath, $sideNavHtml);
+    processDirForSideNavHtml($structure['dir'], $structure, $structure, 0, $currentFilePath, $sideNavHtml);
     return $sideNavHtml;
 }
 

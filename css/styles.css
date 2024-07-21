@@ -95,18 +95,33 @@ body {
 
 .sidenav__item {
     margin: 0 0 2px 0;
+    display: none;
+    display: list-item;
 }
 
 .sidenav__item--current {
     background-color: plum;
+    display: list-item;
 }
 
 .sidenav__item--current-is-decendant {
     background-color: pink;
+    display: list-item;
 }
 
-.sidenav__item--current-is-sibline {
+.sidenav__item--current-is-sibling {
     background-color: papayawhip;
+    display: list-item;
+}
+
+.sidenav__item--is-child-of-current {
+    background-color: navajowhite;
+    display: list-item;
+}
+
+.sidenav__item--level-one {
+    background-color: palegoldenrod;
+    display: list-item;
 }
 
 .snippet {
