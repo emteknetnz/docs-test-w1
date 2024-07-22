@@ -174,43 +174,43 @@ function hasDecendentCurrentFilePath($subStructure, $currentFilePath) {
     return false;
 }
 
-function isChildOfCurrentFilePath($parentSubStructre, $htmlFilePath, $currentFilePath) {
-    // check that currentfilepath is in the parent structure
-    // $currentFilePathInParentSubStructure = false;
-    for ($i = 0; $i < count($parentSubStructre['files']); $i++) {
-        $file = $parentSubStructre['files'][$i];
-        $filePath = $parentSubStructre['dir'] . "/$file";
-        if ($filePath === $currentFilePath) {
-            // $currentFilePathInParentSubStructure = true;
-            // break;
-            return true;
+function isChildOfCurrentFilePath($parentSubStructure, $subStructure, $htmlFilePath, $currentFilePath) {
+    // Is in the same dir as the currently selected index.html
+    $indexFilePath = $subStructure['dir'] . '/' . $subStructure['files'][0];
+    if ($indexFilePath === $currentFilePath) {
+        return true;
+    }
+    // Is the index.html of a subdir of the currently selected index.html
+    $parentIndexFilePath = $parentSubStructure['dir'] . '/' . $parentSubStructure['files'][0];
+    if ($parentIndexFilePath === $currentFilePath) {
+        foreach ($parentSubStructure['subdirs'] as $subdir) {
+            $indexFilePath = $subdir['dir'] . '/' . $subdir['files'][0];
+            if ($indexFilePath === $htmlFilePath) {
+                return true;
+            }
         }
     }
-    // if (!$currentFilePathInParentSubStructure) {
-    //     return false;
-    // }
     return false;
 }
 
-function processDirForSideNavHtml($dir, $parentSubStructre, $subStructure, $level, $currentFilePath, &$sideNavHtml) {
+function processDirForSideNavHtml($dir, $parentSubStructure, $subStructure, $level, $currentFilePath, &$sideNavHtml) {
     if ($level === 0) {
         $sideNavHtml .= "<ul class=\"sidenav__items sidenav__items--first\">\n";
     } else {
         $sideNavHtml .= "<li><ul class=\"sidenav__items\">\n";
     }
-    // loop through files
     $files = $subStructure['files'];
     for ($i = 0; $i < count($files); $i++) {
         $file = $files[$i];
         $htmlFilePath = "$dir/$file";
         $fileLevel = $i == 0 ? $level : $level + 1;
         $hasDecendentCurrentFilePath = false;
+        $isChildOfCurrentFilePath = isChildOfCurrentFilePath($parentSubStructure, $subStructure, $htmlFilePath, $currentFilePath);
         if ($i === 0) {
             $hasDecendentCurrentFilePath = hasDecendentCurrentFilePath($subStructure, $currentFilePath);
         }
         // todo change to isSiblingOfCurrentFilePath($file, ...)
         $hasSiblingCurrentFilePath = hasSiblingCurrentFilePath($subStructure, $currentFilePath);
-        $isChildOfCurrentFilePath = isChildOfCurrentFilePath($parentSubStructre, $htmlFilePath, $currentFilePath);
         addHtmlFilePathToSideNavHtml(
             $htmlFilePath,
             $fileLevel,
