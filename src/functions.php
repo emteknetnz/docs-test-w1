@@ -2,6 +2,39 @@
 
 use Michelf\MarkdownExtra;
 
+function updateChildrenHtml($htmlFilePath, $relatedChildPaths) {
+    // [CHILDREN] basically means 'siblings'
+    $contents = file_get_contents($htmlFilePath);
+    if (empty($relatedChildPaths)) {
+        return $contents;
+    }
+    return preg_replace_callback('#\[CHILDREN(.*?)\]#', function($m) use ($relatedChildPaths) {
+        global $siteDir, $htmlFilePathToMetadata;
+        $opts = trim($m[1]);
+        $asList = strpos($opts, 'list') !== false;
+        $reverse = strpos($opts, 'reverse') !== false;
+        $includeFolders = strpos($opts, 'includeFolders') !== false;
+        $exclude = '';
+        if (preg_match('/Exclude="(.+?)"/', $opts, $m)) {
+            $exclude = $m[1];
+        }
+        $folder = '';
+        if (preg_match('/Folder="(.+?)"/', $opts, $m)) {
+            $folder = $m[1];
+        }
+        $html = '<ul>';
+        foreach ($relatedChildPaths as $relatedChildPath) {
+            $metadata = $htmlFilePathToMetadata[$relatedChildPath] ?? [];
+            $relatedHtml = file_get_contents($relatedChildPath);
+            $title = getTitle($metadata, $relatedHtml, $relatedChildPath);
+            $href = ltrim(str_replace($siteDir, '', $relatedChildPath), '/');
+            $html .= "<li><a href=\"$href\">$title</a></li>";
+        }
+        $html .= '</ul>';
+        return $html;
+    }, $contents);
+}
+
 function makeHtmlPage($title, $contentHtml, $sideNavHtml) {
     global $siteDir, $templatesDir;
     $base = strpos(dirname(__DIR__), '/home/runner/') !== false
@@ -86,8 +119,8 @@ function getSiteStructure($dir, &$structure = []) {
     if (empty($structure)) {
         $structure = [
             'dir' => $dir,
-            'subdirs' => [],
             'files' => [],
+            'subdirs' => [],
         ];
     }
     $files = scandir($dir);
@@ -118,7 +151,7 @@ function addHtmlFilePathToSideNavHtml(
     $level,
     $currentFilePath,
     $hasDecendentCurrentFilePath,
-    $hasSiblingCurrentFilePath,
+    $isSiblingOfCurrentFilePath,
     $isChildOfCurrentFilePath,
     &$sideNavHtml
 ) {
@@ -134,7 +167,7 @@ function addHtmlFilePathToSideNavHtml(
     $isLevelOne = $level === 1;
     $isCurrent = $htmlFilePath === $currentFilePath;
     $hasDecendent = $hasDecendentCurrentFilePath && !$isCurrent;
-    $hasSibling = $hasSiblingCurrentFilePath && !$isCurrent && !$hasDecendent;
+    $hasSibling = $isSiblingOfCurrentFilePath && !$isCurrent && !$hasDecendent;
     $isChild = $isChildOfCurrentFilePath && !$isCurrent && !$hasDecendent && !$hasSibling;
     $class = implode(' ', [
         'sidenav__item',
@@ -147,12 +180,27 @@ function addHtmlFilePathToSideNavHtml(
     $sideNavHtml .= "<li class=\"$class\"><a href=\"$href\">$title</a></li>\n";
 };
 
-function hasSiblingCurrentFilePath($subStructure, $currentFilePath) {
+function isSiblingOfCurrentFilePath($parentSubStructure, $subStructure, $htmlFilePath, $currentFilePath) {
     for ($i = 1; $i < count($subStructure['files']); $i++) {
         $file = $subStructure['files'][$i];
         $filePath = $subStructure['dir'] . "/$file";
         if ($filePath === $currentFilePath) {
             return true;
+        }
+    }
+    foreach ($subStructure['subdirs'] as $subdir) {
+        $filePath = $subdir['dir'] . '/index.html';
+        if ($filePath === $currentFilePath) {
+            return true;
+        }
+    }
+    if (basename($htmlFilePath) === 'index.html') {
+        for ($i = 1; $i < count($parentSubStructure['files']); $i++) {
+            $file = $parentSubStructure['files'][$i];
+            $filePath = $parentSubStructure['dir'] . "/$file";
+            if ($filePath === $currentFilePath) {
+                return true;
+            }
         }
     }
     return false;
@@ -209,14 +257,13 @@ function processDirForSideNavHtml($dir, $parentSubStructure, $subStructure, $lev
         if ($i === 0) {
             $hasDecendentCurrentFilePath = hasDecendentCurrentFilePath($subStructure, $currentFilePath);
         }
-        // todo change to isSiblingOfCurrentFilePath($file, ...)
-        $hasSiblingCurrentFilePath = hasSiblingCurrentFilePath($subStructure, $currentFilePath);
+        $isSiblingOfCurrentFilePath = isSiblingOfCurrentFilePath($parentSubStructure, $subStructure, $htmlFilePath, $currentFilePath);
         addHtmlFilePathToSideNavHtml(
             $htmlFilePath,
             $fileLevel,
             $currentFilePath,
             $hasDecendentCurrentFilePath,
-            $hasSiblingCurrentFilePath,
+            $isSiblingOfCurrentFilePath,
             $isChildOfCurrentFilePath,
             $sideNavHtml
         );

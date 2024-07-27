@@ -94,6 +94,18 @@ foreach ($repoData as $data) {
         $html = makeHtmlPage($title, $contentHtml, $sideNavHtml);
         file_put_contents($htmlFilePath, $html);
     }
+
+    // Update all HTML content files by updating [CHILDREN]
+    $htmlFilePaths = glob("$siteDir/$brace*.html", GLOB_BRACE);
+    foreach ($htmlFilePaths as $htmlFilePath) {
+        $siblingFilePaths = glob(dirname($htmlFilePath) . '/*.html');
+        $siblingFilePaths = array_diff($siblingFilePaths, [$htmlFilePath]);
+        $childIndexFilePaths = glob(dirname($htmlFilePath) . '/*/index.html');
+        $relatedChildPaths = array_merge($siblingFilePaths, $childIndexFilePaths);
+        sort($relatedChildPaths);
+        $contentHtml = updateChildrenHtml($htmlFilePath, $relatedChildPaths);
+        file_put_contents($htmlFilePath, $contentHtml);
+    }
 }
 
 // Copy styles.css to _site
