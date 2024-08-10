@@ -54,10 +54,14 @@ function updateChildrenHtml($htmlFilePath, $relatedChildPaths) {
             if ($exclude) {
                 $filename = basename(str_replace('/index.html', '', $relatedChildPath), $relatedChildPath);
                 foreach (explode(',', $exclude) as $excluded) {
-                    if ($excluded === $filename) {
+                    if (trim($excluded) === $filename) {
                         continue 2;
                     }
                 }
+            }
+            if ($exclude == 'How_Tos') {
+                echo $relatedChildPath . "\n";
+                die;
             }
             $metadata = $htmlFilePathToMetadata[$relatedChildPath] ?? [];
             $relatedHtml = file_get_contents($relatedChildPath);
