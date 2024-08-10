@@ -2,13 +2,37 @@
 
 use Michelf\MarkdownExtra;
 
+/*
+02_Documentation.md
+
+### Linking to child and sibling pages {#link-to-children}
+
+You can list child/sibling pages using the special `[CHILDREN]` syntax. By default these will render as cards with an icon, a title, and a summary if one is available.
+
+You can change what is displayed using one of the `Exclude`, `Folder`, or `Only` modifiers. These all take folder and/or file names as arguments. Exclude the `.md` extension when referencing files. Arguments can include a single item, or multiple items using commas to separate them.
+
+- `[CHILDREN Exclude="How_tos,01_Relations"]`: Exclude specific folders or files from the list. Note that folders don't need to be excluded unless the `includeFolders` modifier is also used.
+- `[CHILDREN Only="rc,beta"]`: Only include the listed items. This is the inverse of the `Exclude` modifier.
+- `[CHILDREN Folder="How_Tos"]`: List the children of the named folder, instead of the children of the *current* folder. This modifier only accepts a single folder as an argument.
+
+The above can be combined with any of the `asList`, `includeFolders`, and `reverse` modifiers:
+
+- `[CHILDREN asList]`: Render the children as a description list instead of as cards. The icon is not used when rendering as a list.
+- `[CHILDREN includeFolders]`: Include folders as well as files.
+- `[CHILDREN reverse]`: Reverse the order of the list. The list is sorted in case sensitive ascending alphabetical order by default.
+
+The following would render links for all children as a description list in reverse order, including folders but excluding anything called "How_tos":
+
+`[CHILDREN Exclude="How_tos" asList includeFolders reverse]`
+*/
+
 function updateChildrenHtml($htmlFilePath, $relatedChildPaths) {
     // [CHILDREN] basically means 'siblings'
     $contents = file_get_contents($htmlFilePath);
     if (empty($relatedChildPaths)) {
         return $contents;
     }
-    return preg_replace_callback('#\[CHILDREN(.*?)\]#', function($m) use ($relatedChildPaths) {
+    return preg_replace_callback('#\[CHILDREN(.*?)\]#', function($m) use ($relatedChildPaths, $htmlFilePath) {
         global $siteDir, $htmlFilePathToMetadata;
         $opts = trim($m[1]);
         $asList = strpos($opts, 'list') !== false;
@@ -16,19 +40,51 @@ function updateChildrenHtml($htmlFilePath, $relatedChildPaths) {
         $includeFolders = strpos($opts, 'includeFolders') !== false;
         $exclude = '';
         if (preg_match('/Exclude="(.+?)"/', $opts, $m)) {
-            $exclude = $m[1];
+            $exclude = trim($m[1]);
         }
         $folder = '';
         if (preg_match('/Folder="(.+?)"/', $opts, $m)) {
             $folder = $m[1];
         }
         $html = '<ul>';
+        if ($reverse) {
+            $relatedChildPaths = array_reverse($relatedChildPaths);
+        }
         foreach ($relatedChildPaths as $relatedChildPath) {
+            if ($exclude) {
+                $filename = basename(str_replace('/index.html', '', $relatedChildPath), $relatedChildPath);
+                foreach (explode(',', $exclude) as $excluded) {
+                    if ($excluded === $filename) {
+                        continue 2;
+                    }
+                }
+            }
             $metadata = $htmlFilePathToMetadata[$relatedChildPath] ?? [];
             $relatedHtml = file_get_contents($relatedChildPath);
             $title = getTitle($metadata, $relatedHtml, $relatedChildPath);
             $href = ltrim(str_replace($siteDir, '', $relatedChildPath), '/');
-            $html .= "<li><a href=\"$href\">$title</a></li>";
+            $classes = [
+                'related-child',
+            ];
+            if ($asList) {
+                $classes[] = 'related-child__list';
+                $class = implode(' ', $classes);
+                $html .= "<li class=\"$class\"><a href=\"$href\">$title</a></li>";
+            } else {
+                $classes[] = 'related-child__card';
+                $class = implode(' ', $classes);
+                $title = $metadata['title'] ?? '';
+                $summary = $metadata['summary'] ?? '';
+                // $introduction = $metadata['introduction'] ?? '';
+                $icon = $metadata['icon'] ?? '';
+                $html .= "<li class=\"$class\"><a href=\"$href\">
+                    <div class=\"related-child__card-icon\">$icon</div>
+                    <div class=\"related-child__card-content\">
+                        <h2 class=\"related-child__card-title\">$title</h2>
+                        <p class=\"related-child__card-summary\">$summary</p>
+                    </div>
+                </a></li>";
+            }
         }
         $html .= '</ul>';
         return $html;
