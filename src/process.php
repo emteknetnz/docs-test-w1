@@ -106,11 +106,11 @@ foreach ($repoData as $data) {
         foreach ($childDirectories as $childDirectory) {
             $childFilePaths = glob("$childDirectory/*.html");
             foreach ($childFilePaths as $childFilePath) {
-                // if (basename($childFilePath) === 'index.html') {
-                //     continue;
-                // }
                 $childDirectoryName = basename($childDirectory);
                 $childDirectoryFilePaths[$childDirectoryName] ??= [];
+                if (basename($childFilePath) === 'index.html') {
+                    continue;
+                }
                 $childDirectoryFilePaths[$childDirectoryName][] = $childFilePath;
             }
         }
