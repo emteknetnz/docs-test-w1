@@ -44,18 +44,20 @@ function updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFi
         $reverse = strpos($opts, 'reverse') !== false;
         $includeFolders = strpos($opts, 'includeFolders') !== false;
         $exclude = '';
-        if (preg_match('/Exclude="?(.+)["\]]/', $opts, $m)) {
+        if (preg_match('/Exclude="?([^"]+)"?/', $opts, $m)) {
             $exclude = trim($m[1]);
         }
         $only = '';
-        if (preg_match('/Only="?(.+)["\]]/', $opts, $m)) {
+        if (preg_match('/Only="?([^"]+)"?/', $opts, $m)) {
             $only = trim($m[1]);
         }
         $folder = '';
-        if (preg_match('/Folder="?(.+)["\]]/', $opts, $m)) {
+        if (preg_match('/Folder="?([^"]+)"?/', $opts, $m)) {
             $folder = $m[1];
             if (!array_key_exists($folder, $childDirectoryFilePaths)) {
-                throw new Exception("Folder '$folder' not found in childDirectoryFilePaths - Parsing $htmlFilePath");
+                // don't throw exception as this will be running in CI
+                echo "\n! WARNING: Folder '$folder' not found in childDirectoryFilePaths - Parsing $htmlFilePath\n\n";
+                return;
             }
             $paths = $childDirectoryFilePaths[$folder];
         }
