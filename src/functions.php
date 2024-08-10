@@ -26,47 +26,72 @@ The following would render links for all children as a description list in rever
 `[CHILDREN Exclude="How_tos" asList includeFolders reverse]`
 */
 
-function updateChildrenHtml($htmlFilePath, $relatedChildPaths) {
+function updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFilePaths) {
     // [CHILDREN] basically means 'siblings'
     $contents = file_get_contents($htmlFilePath);
     if (empty($relatedChildPaths)) {
         return $contents;
     }
-    return preg_replace_callback('#\[CHILDREN(.*?)\]#', function($m) use ($relatedChildPaths, $htmlFilePath) {
+    return preg_replace_callback('#(?<!<code>)\[CHILDREN(.*?)\]#', function($matches) use (
+        $htmlFilePath,
+        $relatedChildPaths,
+        $childDirectoryFilePaths,
+    ) {
         global $siteDir, $htmlFilePathToMetadata;
-        $opts = trim($m[1]);
+        $opts = trim($matches[1]);
+        $paths = $relatedChildPaths;
         $asList = strpos($opts, 'list') !== false;
         $reverse = strpos($opts, 'reverse') !== false;
         $includeFolders = strpos($opts, 'includeFolders') !== false;
         $exclude = '';
-        if (preg_match('/Exclude="(.+?)"/', $opts, $m)) {
+        if (preg_match('/Exclude="?(.+)["\]]/', $opts, $m)) {
             $exclude = trim($m[1]);
         }
+        $only = '';
+        if (preg_match('/Only="?(.+)["\]]/', $opts, $m)) {
+            $only = trim($m[1]);
+        }
         $folder = '';
-        if (preg_match('/Folder="(.+?)"/', $opts, $m)) {
+        if (preg_match('/Folder="?(.+)["\]]/', $opts, $m)) {
             $folder = $m[1];
+            if (!array_key_exists($folder, $childDirectoryFilePaths)) {
+                throw new Exception("Folder '$folder' not found in childDirectoryFilePaths - Parsing $htmlFilePath");
+            }
+            $paths = $childDirectoryFilePaths[$folder];
         }
         $html = '<ul>';
         if ($reverse) {
-            $relatedChildPaths = array_reverse($relatedChildPaths);
+            $paths = array_reverse($paths);
         }
-        foreach ($relatedChildPaths as $relatedChildPath) {
+        foreach ($paths as $path) {
+            $pathForFilename = $path;
+            if ($includeFolders) {
+                $pathForFilename = str_replace('/index.html', '', $pathForFilename);
+            }
+            $filename = basename($pathForFilename);
             if ($exclude) {
-                $filename = basename(str_replace('/index.html', '', $relatedChildPath), $relatedChildPath);
                 foreach (explode(',', $exclude) as $excluded) {
                     if (trim($excluded) === $filename) {
                         continue 2;
                     }
                 }
             }
-            if ($exclude == 'How_Tos') {
-                echo $relatedChildPath . "\n";
-                die;
+            if ($only) {
+                $found = false;
+                foreach (explode(',', $only) as $onlyed) {
+                    if (trim($onlyed) === $filename) {
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    continue;
+                }
             }
-            $metadata = $htmlFilePathToMetadata[$relatedChildPath] ?? [];
-            $relatedHtml = file_get_contents($relatedChildPath);
-            $title = getTitle($metadata, $relatedHtml, $relatedChildPath);
-            $href = ltrim(str_replace($siteDir, '', $relatedChildPath), '/');
+            $metadata = $htmlFilePathToMetadata[$path] ?? [];
+            $relatedHtml = file_get_contents($path);
+            $title = getTitle($metadata, $relatedHtml, $path);
+            $href = ltrim(str_replace($siteDir, '', $path), '/');
             $classes = [
                 'related-child',
             ];
@@ -77,9 +102,7 @@ function updateChildrenHtml($htmlFilePath, $relatedChildPaths) {
             } else {
                 $classes[] = 'related-child__card';
                 $class = implode(' ', $classes);
-                $title = $metadata['title'] ?? '';
                 $summary = $metadata['summary'] ?? '';
-                // $introduction = $metadata['introduction'] ?? '';
                 $icon = $metadata['icon'] ?? '';
                 $html .= "<li class=\"$class\"><a href=\"$href\">
                     <div class=\"related-child__card-icon\">$icon</div>

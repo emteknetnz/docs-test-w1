@@ -101,9 +101,22 @@ foreach ($repoData as $data) {
         $siblingFilePaths = glob(dirname($htmlFilePath) . '/*.html');
         $siblingFilePaths = array_diff($siblingFilePaths, [$htmlFilePath]);
         $childIndexFilePaths = glob(dirname($htmlFilePath) . '/*/index.html');
+        $childDirectories = array_map('dirname', $childIndexFilePaths);
+        $childDirectoryFilePaths = [];
+        foreach ($childDirectories as $childDirectory) {
+            $childFilePaths = glob("$childDirectory/*.html");
+            foreach ($childFilePaths as $childFilePath) {
+                if (basename($childFilePath) === 'index.html') {
+                    continue;
+                }
+                $childDirectoryName = basename($childDirectory);
+                $childDirectoryFilePaths[$childDirectoryName] ??= [];
+                $childDirectoryFilePaths[$childDirectoryName][] = $childFilePath;
+            }
+        }
         $relatedChildPaths = array_merge($siblingFilePaths, $childIndexFilePaths);
         sort($relatedChildPaths);
-        $contentHtml = updateChildrenHtml($htmlFilePath, $relatedChildPaths);
+        $contentHtml = updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFilePaths);
         file_put_contents($htmlFilePath, $contentHtml);
     }
 }
