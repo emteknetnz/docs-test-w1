@@ -55,8 +55,9 @@ function updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFi
         if (preg_match('/Folder="?([^"]+)"?/', $opts, $m)) {
             $folder = $m[1];
             if (!array_key_exists($folder, $childDirectoryFilePaths)) {
-                // don't throw exception as this will be running in CI
-                echo "\n! WARNING: Folder '$folder' not found in childDirectoryFilePaths - Parsing $htmlFilePath\n\n";
+                // Do not throw exception as this will be running in GitHub Actions
+                echo "\n! WARNING: Folder '$folder' not found in childDirectoryFilePaths - parsing $htmlFilePath\n\n";
+                // The incorrect [CHILDREN folder=""] will simply be ignored
                 return;
             }
             $paths = $childDirectoryFilePaths[$folder];
@@ -74,6 +75,21 @@ function updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFi
             if ($exclude) {
                 foreach (explode(',', $exclude) as $excluded) {
                     if (trim($excluded) === $filename) {
+                        continue 2;
+                    } elseif (strtolower(trim($excluded)) === strtolower($filename)) {
+                        // Do not throw exception as this will be running in GitHub Actions
+                        echo "\n! WARNING: 'Exclude' casing does not match for $exclude - parsing $htmlFilePath\n\n";
+                        // Still behave as if the casing was correct
+                        continue 2;
+                    }
+                    // treat as if includeFolders is true when using exclude
+                    $folderName = basename(str_replace('/index.html', '', $path));
+                    if (trim($excluded) === $folderName) {
+                        continue 2;
+                    } elseif (strtolower(trim($excluded)) === strtolower($folderName)) {
+                        // Do not throw exception as this will be running in GitHub Actions
+                        echo "\n! WARNING: 'Exclude' casing does not match for $exclude - parsing $htmlFilePath\n\n";
+                        // Still behave as if the casing was correct
                         continue 2;
                     }
                 }
