@@ -26,7 +26,12 @@ The following would render links for all children as a description list in rever
 `[CHILDREN Exclude="How_tos" asList includeFolders reverse]`
 */
 
-function updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFilePaths) {
+function updateChildrenHtml(
+    $htmlFilePath,
+    $relatedChildPaths,
+    $childDirectoryFilePaths,
+    $grandChildIndexFilePaths
+) {
     // [CHILDREN] basically means 'siblings'
     $contents = file_get_contents($htmlFilePath);
     if (empty($relatedChildPaths)) {
@@ -36,6 +41,7 @@ function updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFi
         $htmlFilePath,
         $relatedChildPaths,
         $childDirectoryFilePaths,
+        $grandChildIndexFilePaths,
     ) {
         global $siteDir, $htmlFilePathToMetadata;
         $opts = trim($matches[1]);
@@ -54,13 +60,17 @@ function updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFi
         $folder = '';
         if (preg_match('/Folder="?([^"]+)"?/', $opts, $m)) {
             $folder = $m[1];
-            if (!array_key_exists($folder, $childDirectoryFilePaths)) {
+            if (!array_key_exists($folder, $childDirectoryFilePaths) && !array_key_exists($folder, $grandChildIndexFilePaths)) {
                 // Do not throw exception as this will be running in GitHub Actions
-                echo "\n! WARNING: Folder '$folder' not found in childDirectoryFilePaths - parsing $htmlFilePath\n\n";
+                echo "\n! WARNING: Folder '$folder' not found in grandChildIndexFilePaths - parsing $htmlFilePath\n\n";
                 // The incorrect [CHILDREN folder=""] will simply be ignored
                 return;
             }
-            $paths = $childDirectoryFilePaths[$folder];
+            if (isset($childDirectoryFilePaths[$folder]) && !empty($childDirectoryFilePaths[$folder])) {
+                $paths = $childDirectoryFilePaths[$folder];
+            } else {
+                $paths = $grandChildIndexFilePaths[$folder];
+            }
         }
         $html = '<ul>';
         if ($reverse) {

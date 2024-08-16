@@ -103,12 +103,17 @@ foreach ($repoData as $data) {
         $childIndexFilePaths = glob(dirname($htmlFilePath) . '/*/index.html');
         $childDirectories = array_map('dirname', $childIndexFilePaths);
         $childDirectoryFilePaths = [];
+        $grandChildIndexFilePaths = [];
         foreach ($childDirectories as $childDirectory) {
-            $childFilePaths = glob("$childDirectory/*.html");
+            $childFilePaths = glob("$childDirectory/*.html"); // <<<<
             foreach ($childFilePaths as $childFilePath) {
                 $childDirectoryName = basename($childDirectory);
                 $childDirectoryFilePaths[$childDirectoryName] ??= [];
                 if (basename($childFilePath) === 'index.html') {
+                    foreach (glob("$childDirectory/*/index.html") as $grandChildIndexFilePath) {
+                        $grandChildIndexFilePaths[$childDirectoryName] ??= [];
+                        $grandChildIndexFilePaths[$childDirectoryName][] = $grandChildIndexFilePath;
+                    }
                     continue;
                 }
                 $childDirectoryFilePaths[$childDirectoryName][] = $childFilePath;
@@ -116,7 +121,7 @@ foreach ($repoData as $data) {
         }
         $relatedChildPaths = array_merge($siblingFilePaths, $childIndexFilePaths);
         sort($relatedChildPaths);
-        $contentHtml = updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFilePaths);
+        $contentHtml = updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFilePaths, $grandChildIndexFilePaths);
         file_put_contents($htmlFilePath, $contentHtml);
     }
 }
