@@ -46,7 +46,7 @@ function updateChildrenHtml(
         global $siteDir, $htmlFilePathToMetadata;
         $opts = trim($matches[1]);
         $paths = $relatedChildPaths;
-        $asList = strpos($opts, 'list') !== false;
+        $asList = strpos($opts, 'asList') !== false;
         $reverse = strpos($opts, 'reverse') !== false;
         $includeFolders = strpos($opts, 'includeFolders') !== false;
         $exclude = '';
@@ -76,7 +76,22 @@ function updateChildrenHtml(
         if ($reverse) {
             $paths = array_reverse($paths);
         }
+
+        // sort by title (actually don't)
+        $pathTitles = [];
         foreach ($paths as $path) {
+            $metadata = $htmlFilePathToMetadata[$path] ?? [];
+            $relatedHtml = file_get_contents($path);
+            $title = getTitle($metadata, $relatedHtml, $path);
+            $pathTitles[$path] = $title;
+        }
+        if (false) {
+            // do not sort by title, as it will not match sidenav html
+            // which is currently unsortable as it's raw html
+            asort($pathTitles);
+        }
+
+        foreach (array_keys($pathTitles) as $path) {
             $pathForFilename = $path;
             if ($includeFolders) {
                 $pathForFilename = str_replace('/index.html', '', $pathForFilename);

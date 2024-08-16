@@ -83,7 +83,6 @@ foreach ($repoData as $data) {
         file_put_contents($indexHtmlFilePath, $html);
     }
 
-
     // Update all HTML content files by adding in template
     $htmlFilePaths = glob("$siteDir/$brace*.html", GLOB_BRACE);
     foreach ($htmlFilePaths as $htmlFilePath) {
@@ -98,14 +97,20 @@ foreach ($repoData as $data) {
     // Update all HTML content files by updating [CHILDREN]
     $htmlFilePaths = glob("$siteDir/$brace*.html", GLOB_BRACE);
     foreach ($htmlFilePaths as $htmlFilePath) {
-        $siblingFilePaths = glob(dirname($htmlFilePath) . '/*.html');
-        $siblingFilePaths = array_diff($siblingFilePaths, [$htmlFilePath]);
+        $siblingFilePaths = [];
+        // $siblingFilePaths = array_diff($siblingFilePaths, [$htmlFilePath]);
+        foreach (glob(dirname($htmlFilePath) . '/*.html') as $siblingFilePath) {
+            if (basename($siblingFilePath) === 'index.html') {
+                continue;
+            }
+            $siblingFilePaths[] = $siblingFilePath;
+        }
         $childIndexFilePaths = glob(dirname($htmlFilePath) . '/*/index.html');
         $childDirectories = array_map('dirname', $childIndexFilePaths);
         $childDirectoryFilePaths = [];
         $grandChildIndexFilePaths = [];
         foreach ($childDirectories as $childDirectory) {
-            $childFilePaths = glob("$childDirectory/*.html"); // <<<<
+            $childFilePaths = glob("$childDirectory/*.html");
             foreach ($childFilePaths as $childFilePath) {
                 $childDirectoryName = basename($childDirectory);
                 $childDirectoryFilePaths[$childDirectoryName] ??= [];
