@@ -130,17 +130,12 @@ foreach ($repoData as $data) {
         file_put_contents($htmlFilePath, $contentHtml);
     }
     
-    // Update links to relative anchors - mostly relevant for changelogs
-    foreach ($htmlFilePaths as $htmlFilePath) {
-        $contentHtml = file_get_contents($htmlFilePath);
-        $contentHtml = updateHtmlLinksToRelativeAnchors($contentHtml, $htmlFilePath);
-        file_put_contents($htmlFilePath, $contentHtml);
-    }
-
-    // Add anchor links to headings
+    // Other updates to HTML content files
     foreach ($htmlFilePaths as $htmlFilePath) {
         $contentHtml = file_get_contents($htmlFilePath);
         $contentHtml = addAnchorLinksToHeadings($contentHtml);
+        $contentHtml = updateHtmlLinksToRelativeAnchors($contentHtml, $htmlFilePath);
+        $contentHtml = updateApiLinks($contentHtml);
         file_put_contents($htmlFilePath, $contentHtml);
     }
 }

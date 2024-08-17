@@ -26,12 +26,15 @@ The following would render links for all children as a description list in rever
 `[CHILDREN Exclude="How_tos" asList includeFolders reverse]`
 */
 
+// TODO: this depends on the source, though keep it as 5 for now
+define('CURRENT_CMS_MAJOR', '5');
+
 function updateChildrenHtml(
-    $htmlFilePath,
-    $relatedChildPaths,
-    $childDirectoryFilePaths,
-    $grandChildIndexFilePaths
-) {
+    string $htmlFilePath,
+    array $relatedChildPaths,
+    array $childDirectoryFilePaths,
+    array $grandChildIndexFilePaths
+): string {
     // [CHILDREN] basically means 'siblings'
     $contents = file_get_contents($htmlFilePath);
     if (empty($relatedChildPaths)) {
@@ -169,7 +172,8 @@ function updateChildrenHtml(
     }, $contents);
 }
 
-function makeHtmlPage($title, $contentHtml, $sideNavHtml) {
+function makeHtmlPage(string $title, string $contentHtml, string $sideNavHtml):string
+{
     global $siteDir, $templatesDir;
     $base = strpos(dirname(__DIR__), '/home/runner/') !== false
         ? 'https://emteknetnz.github.io/docs-test-w1/'
@@ -192,7 +196,8 @@ function makeHtmlPage($title, $contentHtml, $sideNavHtml) {
  * This needs to be done because the presence of a base metatag in the head
  * means that relative links will not work as expected
  */
-function updateHtmlLinksToRelativeAnchors($contentHtml, $htmlFilePath) {
+function updateHtmlLinksToRelativeAnchors(string $contentHtml, string$htmlFilePath): string
+{
     $htmlFilePath = str_replace('/index.html', '', $htmlFilePath);
     return preg_replace_callback('/<a href="(#.*?)"/', function($matches) use ($htmlFilePath) {
         $href = $matches[1];
@@ -213,16 +218,28 @@ function addAnchorLinksToHeadings(string $contentHtml): string
     }, $contentHtml);
 }
 
-function getTitle($metadata, $html, $htmlFilePath) {
+function updateApiLinks(string $contentHtml): string
+{
+    $currentCmsMajor = CURRENT_CMS_MAJOR;
+    return preg_replace_callback('/href="api:([^"]+)"/', function($matches) use ($currentCmsMajor) {
+        $class = urlencode($matches[1]);
+        return "href=\"https://api.silverstripe.org/search/lookup?q=$class&version=$currentCmsMajor\"";
+    }, $contentHtml);
+}
+
+function getTitle(array $metadata, string $html, string$htmlFilePath): string
+{
     return $metadata['title'] ?? getH1fromHtml($html) ?: basename($htmlFilePath);
 }
 
-function getH1fromHtml($html) {
+function getH1fromHtml(string $html):string
+{
     preg_match('/<h1>(.*?)<\/h1>/', $html, $matches);
     return $matches[1] ?? '';
 }
 
-function getMetadataFromMd($md) {
+function getMetadataFromMd(string $md): array
+{
     $metadata = [];
     if (strpos($md, '---') !== 0) {
         return $metadata;
@@ -243,7 +260,8 @@ function getMetadataFromMd($md) {
     return $metadata;
 }
 
-function removeMetadataFromMd($md) {
+function removeMetadataFromMd(string $md)
+{
     $start = strpos($md, '---');
     if ($start !== 0) {
         return $md;
@@ -255,7 +273,8 @@ function removeMetadataFromMd($md) {
     return substr($md, $end + 3);
 }
 
-function convertMarkdownToHtml($md) {
+function convertMarkdownToHtml(string $md)
+{
     $parser = new MarkdownExtra();
     $parser->code_attr_on_pre = true;
     $parser->code_class_prefix = 'snippet snippet--';
@@ -264,7 +283,8 @@ function convertMarkdownToHtml($md) {
     return $html;
 }
 
-function updateAlerts($html) {
+function updateAlerts(string $html)
+{
     $types = ['NOTE', 'TIP', 'WARNING', 'IMPORTANT', 'CAUTION'];
     foreach ($types as $type) {
         $ltype = strtolower($type);
@@ -275,7 +295,8 @@ function updateAlerts($html) {
     return $html;
 }
 
-function getSiteStructure($dir, &$structure = []) {
+function getSiteStructure(string $dir, array &$structure = [])
+{
     if (empty($structure)) {
         $structure = [
             'dir' => $dir,
@@ -307,14 +328,14 @@ function getSiteStructure($dir, &$structure = []) {
 }
 
 function addHtmlFilePathToSideNavHtml(
-    $htmlFilePath,
-    $level,
-    $currentFilePath,
-    $hasDecendentCurrentFilePath,
-    $isSiblingOfCurrentFilePath,
-    $isChildOfCurrentFilePath,
-    &$sideNavHtml
-) {
+    string $htmlFilePath,
+    int $level,
+    string $currentFilePath,
+    bool $hasDecendentCurrentFilePath,
+    bool $isSiblingOfCurrentFilePath,
+    bool $isChildOfCurrentFilePath,
+    string &$sideNavHtml
+): void {
     global $siteDir, $htmlFilePathToMetadata;
     if ($level === 0) {
         // link is shown in top left logo instead
@@ -340,7 +361,12 @@ function addHtmlFilePathToSideNavHtml(
     $sideNavHtml .= "<li class=\"$class\"><a href=\"$href\">$title</a></li>\n";
 };
 
-function isSiblingOfCurrentFilePath($parentSubStructure, $subStructure, $htmlFilePath, $currentFilePath) {
+function isSiblingOfCurrentFilePath(
+    array $parentSubStructure,
+    array $subStructure,
+    string $htmlFilePath,
+    string$currentFilePath
+): bool {
     for ($i = 1; $i < count($subStructure['files']); $i++) {
         $file = $subStructure['files'][$i];
         $filePath = $subStructure['dir'] . "/$file";
@@ -366,7 +392,10 @@ function isSiblingOfCurrentFilePath($parentSubStructure, $subStructure, $htmlFil
     return false;
 }
 
-function hasDecendentCurrentFilePath($subStructure, $currentFilePath) {
+function hasDecendentCurrentFilePath(
+    array $subStructure,
+    string $currentFilePath
+): bool {
     for ($i = 0; $i < count($subStructure['files']); $i++) {
         $file = $subStructure['files'][$i];
         $filePath = $subStructure['dir'] . "/$file";
@@ -382,7 +411,12 @@ function hasDecendentCurrentFilePath($subStructure, $currentFilePath) {
     return false;
 }
 
-function isChildOfCurrentFilePath($parentSubStructure, $subStructure, $htmlFilePath, $currentFilePath) {
+function isChildOfCurrentFilePath(
+    array $parentSubStructure,
+    array $subStructure,
+    string $htmlFilePath,
+    string $currentFilePath
+): bool {
     // Is in the same dir as the currently selected index.html
     $indexFilePath = $subStructure['dir'] . '/' . $subStructure['files'][0];
     if ($indexFilePath === $currentFilePath) {
@@ -401,7 +435,14 @@ function isChildOfCurrentFilePath($parentSubStructure, $subStructure, $htmlFileP
     return false;
 }
 
-function processDirForSideNavHtml($dir, $parentSubStructure, $subStructure, $level, $currentFilePath, &$sideNavHtml) {
+function processDirForSideNavHtml(
+    string $dir,
+    array $parentSubStructure,
+    array $subStructure,
+    int $level,
+    string $currentFilePath,
+    string &$sideNavHtml
+): void {
     if ($level === 0) {
         $sideNavHtml .= "<ul class=\"sidenav__items sidenav__items--first\">\n";
     } else {
@@ -447,7 +488,8 @@ function processDirForSideNavHtml($dir, $parentSubStructure, $subStructure, $lev
     }
 };
 
-function createSideNavHtml($currentFilePath) {
+function createSideNavHtml(string $currentFilePath): string
+{
     global $siteDir;
     $sideNavHtml = '';
     $structure = getSiteStructure($siteDir);
@@ -456,6 +498,7 @@ function createSideNavHtml($currentFilePath) {
     return $sideNavHtml;
 }
 
-function debug($var) {
+function debug(mixed $var): void
+{
     file_put_contents(__DIR__ . '/../debug.txt', var_export($var, true));
 }
