@@ -187,6 +187,32 @@ function makeHtmlPage($title, $contentHtml, $sideNavHtml) {
     return $template;
 }
 
+/**
+ * Update links to HTML anchors on the current page to include the $htmlFilePath
+ * This needs to be done because the presence of a base metatag in the head
+ * means that relative links will not work as expected
+ */
+function updateHtmlLinksToRelativeAnchors($contentHtml, $htmlFilePath) {
+    $htmlFilePath = str_replace('/index.html', '', $htmlFilePath);
+    return preg_replace_callback('/<a href="(#.*?)"/', function($matches) use ($htmlFilePath) {
+        $href = $matches[1];
+        return "<a href=\"{$htmlFilePath}{$href}\"";
+    }, $contentHtml);
+}
+
+/**
+ * Adds anchor links to headings in the given HTML content for headings that do not already have an ID
+ */
+function addAnchorLinksToHeadings(string $contentHtml): string
+{
+    return preg_replace_callback('#<h([1-5])>([^<]+)</h[1-5]>#', function($matches) {
+        $level = $matches[1];
+        $text = $matches[2];
+        $id = strtolower(str_replace(' ', '-', preg_replace('#[^a-zA-Z0-9\- ]#', '', $text)));
+        return "<h$level id=\"$id\">$text</h$level>";
+    }, $contentHtml);
+}
+
 function getTitle($metadata, $html, $htmlFilePath) {
     return $metadata['title'] ?? getH1fromHtml($html) ?: basename($htmlFilePath);
 }

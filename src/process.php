@@ -129,6 +129,20 @@ foreach ($repoData as $data) {
         $contentHtml = updateChildrenHtml($htmlFilePath, $relatedChildPaths, $childDirectoryFilePaths, $grandChildIndexFilePaths);
         file_put_contents($htmlFilePath, $contentHtml);
     }
+    
+    // Update links to relative anchors - mostly relevant for changelogs
+    foreach ($htmlFilePaths as $htmlFilePath) {
+        $contentHtml = file_get_contents($htmlFilePath);
+        $contentHtml = updateHtmlLinksToRelativeAnchors($contentHtml, $htmlFilePath);
+        file_put_contents($htmlFilePath, $contentHtml);
+    }
+
+    // Add anchor links to headings
+    foreach ($htmlFilePaths as $htmlFilePath) {
+        $contentHtml = file_get_contents($htmlFilePath);
+        $contentHtml = addAnchorLinksToHeadings($contentHtml);
+        file_put_contents($htmlFilePath, $contentHtml);
+    }
 }
 
 // Copy styles.css to _site
