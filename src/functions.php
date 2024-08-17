@@ -49,6 +49,14 @@ function updateChildrenHtml(
         $asList = strpos($opts, 'asList') !== false;
         $reverse = strpos($opts, 'reverse') !== false;
         $includeFolders = strpos($opts, 'includeFolders') !== false;
+        if (!$includeFolders) {
+            // only include siblings i.e. do not include <$dirname>/folder/index.html files
+            $paths = array_filter($paths, function($path) use ($htmlFilePath) {
+                $dirname = dirname($htmlFilePath);
+                $basename = basename($path);
+                return "$dirname/$basename" === $path;
+            });
+        }
         $exclude = '';
         if (preg_match('/Exclude="?([^"]+)"?/', $opts, $m)) {
             $exclude = trim($m[1]);
@@ -86,7 +94,7 @@ function updateChildrenHtml(
             $pathTitles[$path] = $title;
         }
         if (false) {
-            // do not sort by title, as it will not match sidenav html
+            // TODO: do not sort by title, as it will not match sidenav html
             // which is currently unsortable as it's raw html
             asort($pathTitles);
         }
