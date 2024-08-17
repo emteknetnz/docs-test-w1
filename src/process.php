@@ -90,7 +90,7 @@ foreach ($repoData as $data) {
         $contentHtml = file_get_contents($htmlFilePath);
         $title = getTitle($metadata, $contentHtml, $htmlFilePath);
         $sideNavHtml = createSideNavHtml($htmlFilePath);
-        $html = makeHtmlPage($title, $contentHtml, $sideNavHtml);
+        $html = addHtmlTemplate($title, $contentHtml, $sideNavHtml);
         file_put_contents($htmlFilePath, $html);
     }
 

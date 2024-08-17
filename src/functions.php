@@ -2,33 +2,14 @@
 
 use Michelf\MarkdownExtra;
 
-/*
-02_Documentation.md
-
-### Linking to child and sibling pages {#link-to-children}
-
-You can list child/sibling pages using the special `[CHILDREN]` syntax. By default these will render as cards with an icon, a title, and a summary if one is available.
-
-You can change what is displayed using one of the `Exclude`, `Folder`, or `Only` modifiers. These all take folder and/or file names as arguments. Exclude the `.md` extension when referencing files. Arguments can include a single item, or multiple items using commas to separate them.
-
-- `[CHILDREN Exclude="How_tos,01_Relations"]`: Exclude specific folders or files from the list. Note that folders don't need to be excluded unless the `includeFolders` modifier is also used.
-- `[CHILDREN Only="rc,beta"]`: Only include the listed items. This is the inverse of the `Exclude` modifier.
-- `[CHILDREN Folder="How_Tos"]`: List the children of the named folder, instead of the children of the *current* folder. This modifier only accepts a single folder as an argument.
-
-The above can be combined with any of the `asList`, `includeFolders`, and `reverse` modifiers:
-
-- `[CHILDREN asList]`: Render the children as a description list instead of as cards. The icon is not used when rendering as a list.
-- `[CHILDREN includeFolders]`: Include folders as well as files.
-- `[CHILDREN reverse]`: Reverse the order of the list. The list is sorted in case sensitive ascending alphabetical order by default.
-
-The following would render links for all children as a description list in reverse order, including folders but excluding anything called "How_tos":
-
-`[CHILDREN Exclude="How_tos" asList includeFolders reverse]`
-*/
-
 // TODO: this depends on the source, though keep it as 5 for now
 define('CURRENT_CMS_MAJOR', '5');
 
+/**
+ * Update [CHILDREN] in the given HTML file path
+ * 
+ * See https://docs.silverstripe.org/en/5/contributing/documentation/#link-to-children for more information
+ */
 function updateChildrenHtml(
     string $htmlFilePath,
     array $relatedChildPaths,
@@ -172,7 +153,10 @@ function updateChildrenHtml(
     }, $contents);
 }
 
-function makeHtmlPage(string $title, string $contentHtml, string $sideNavHtml):string
+/**
+ * Adds a template to the given HTML content
+ */
+function addHtmlTemplate(string $title, string $contentHtml, string $sideNavHtml):string
 {
     global $siteDir, $templatesDir;
     $base = strpos(dirname(__DIR__), '/home/runner/') !== false
@@ -218,6 +202,9 @@ function addAnchorLinksToHeadings(string $contentHtml): string
     }, $contentHtml);
 }
 
+/**
+ * Update API links in the given HTML content to point to the api.silverstripe.org
+ */
 function updateApiLinks(string $contentHtml): string
 {
     $currentCmsMajor = CURRENT_CMS_MAJOR;
@@ -227,17 +214,26 @@ function updateApiLinks(string $contentHtml): string
     }, $contentHtml);
 }
 
+/**
+ * Get the title from the metadata or the first h1 tag in the HTML content
+ */
 function getTitle(array $metadata, string $html, string$htmlFilePath): string
 {
     return $metadata['title'] ?? getH1fromHtml($html) ?: basename($htmlFilePath);
 }
 
+/**
+ * Get the first h1 tag from the given HTML content
+ */
 function getH1fromHtml(string $html):string
 {
     preg_match('/<h1>(.*?)<\/h1>/', $html, $matches);
     return $matches[1] ?? '';
 }
 
+/**
+ * Get metadata from the given markdown content
+ */
 function getMetadataFromMd(string $md): array
 {
     $metadata = [];
@@ -260,6 +256,9 @@ function getMetadataFromMd(string $md): array
     return $metadata;
 }
 
+/**
+ * Remove metadata from the given markdown content
+ */
 function removeMetadataFromMd(string $md)
 {
     $start = strpos($md, '---');
@@ -273,6 +272,9 @@ function removeMetadataFromMd(string $md)
     return substr($md, $end + 3);
 }
 
+/**
+ * Convert markdown to HTML
+ */
 function convertMarkdownToHtml(string $md)
 {
     $parser = new MarkdownExtra();
@@ -283,6 +285,9 @@ function convertMarkdownToHtml(string $md)
     return $html;
 }
 
+/**
+ * Update alerts to use the new alert classes
+ */
 function updateAlerts(string $html)
 {
     $types = ['NOTE', 'TIP', 'WARNING', 'IMPORTANT', 'CAUTION'];
@@ -295,6 +300,9 @@ function updateAlerts(string $html)
     return $html;
 }
 
+/**
+ * Get the site structure
+ */
 function getSiteStructure(string $dir, array &$structure = [])
 {
     if (empty($structure)) {
@@ -327,6 +335,9 @@ function getSiteStructure(string $dir, array &$structure = [])
     return $structure;
 }
 
+/**
+ * Add an HTML file path to the side nav HTML
+ */
 function addHtmlFilePathToSideNavHtml(
     string $htmlFilePath,
     int $level,
@@ -361,11 +372,14 @@ function addHtmlFilePathToSideNavHtml(
     $sideNavHtml .= "<li class=\"$class\"><a href=\"$href\">$title</a></li>\n";
 };
 
+/**
+ * Check if the given file path is a sibling of the currently selected html file path
+ */
 function isSiblingOfCurrentFilePath(
     array $parentSubStructure,
     array $subStructure,
     string $htmlFilePath,
-    string$currentFilePath
+    string $currentFilePath
 ): bool {
     for ($i = 1; $i < count($subStructure['files']); $i++) {
         $file = $subStructure['files'][$i];
@@ -392,6 +406,9 @@ function isSiblingOfCurrentFilePath(
     return false;
 }
 
+/**
+ * Check if the given file path is a decendent of the currently selected html file path
+ */
 function hasDecendentCurrentFilePath(
     array $subStructure,
     string $currentFilePath
@@ -411,6 +428,9 @@ function hasDecendentCurrentFilePath(
     return false;
 }
 
+/**
+ * Check if the given file path is a child of the currently selected html file path
+ */
 function isChildOfCurrentFilePath(
     array $parentSubStructure,
     array $subStructure,
@@ -435,6 +455,9 @@ function isChildOfCurrentFilePath(
     return false;
 }
 
+/**
+ * Process a directory for side nav HTML
+ */
 function processDirForSideNavHtml(
     string $dir,
     array $parentSubStructure,
@@ -488,6 +511,9 @@ function processDirForSideNavHtml(
     }
 };
 
+/**
+ * Create the side nav HTML
+ */
 function createSideNavHtml(string $currentFilePath): string
 {
     global $siteDir;
@@ -498,6 +524,9 @@ function createSideNavHtml(string $currentFilePath): string
     return $sideNavHtml;
 }
 
+/**
+ * Dump to debug.txt
+ */
 function debug(mixed $var): void
 {
     file_put_contents(__DIR__ . '/../debug.txt', var_export($var, true));
